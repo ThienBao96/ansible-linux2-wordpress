@@ -1,0 +1,8 @@
+letsencrypt:
+  hosts:
+    first_host:
+      ansible_ssh_host: [HOST_IP]
+      ansible_ssh_user: [HOST_USER_NAME]
+      ansible_ssh_private_key_file: [PATH_TO_SSH_KEY]
+      letsencrypt_email: [YOUR_EMAIL]
+      domain_name: [DOMAIN_NAME]

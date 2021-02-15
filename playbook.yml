@@ -1,0 +1,22 @@
+---
+- name: Install WordPress on Linux 2 AWS
+  hosts: all
+  # remote_user: ec2-user
+  # remote_user: user
+  become: yes
+  # become_method: sudo
+
+  vars:
+    - working_dir: "./"
+    - webroot: "/var/www/{{ domain_name }}/public"
+    - remote_home_dir: "/home/{{ ansible_ssh_user }}"
+
+  roles:
+    - common
+    - php72
+    - httpd
+    - mysql
+    - wordpress
+    # - nginx
+    # - php-fpm
+    # - wordpress

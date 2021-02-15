@@ -1,0 +1,57 @@
+---
+- name: Install letsencrypt
+  yum: name=letsencrypt state=present
+
+- name: Install httpd
+  yum: name=httpd state=present
+
+- name: Install mod_ssl
+  yum: name=mod_ssl state=present
+
+- name: Git checkout h5bp server-configs-apache
+  ansible.builtin.git:
+    repo: 'https://github.com/h5bp/server-configs-apache.git'
+    dest: "{{ remote_home_dir }}/server-configs-apache"
+
+- name: Copy httpd to httpd-previous
+  shell: mkdir /etc/httpd-previous && cp -r /etc/httpd/* /etc/httpd-previous
+  args:
+    creates: /etc/httpd-previous
+
+- name: Copy .htaccess to /etc/httpd/conf.d
+  shell: creates=/etc/httpd/conf.d/h5bp.conf cp {{ remote_home_dir }}/server-configs-apache/dist/.htaccess /etc/httpd/conf.d
+
+- name: rename .htaccess to h5bp.conf
+  shell: creates=/etc/httpd/conf.d/h5bp.conf mv /etc/httpd/conf.d/.htaccess /etc/httpd/conf.d/h5bp.conf
+
+- name: "create {{webroot}} directory"
+  ansible.builtin.file:
+    path: "{{webroot}}"
+    state: directory
+
+- name: Create no-ssl site config
+  template:
+    src: no-ssl.example.com.conf
+    dest: /etc/httpd/conf.d/no-ssl.{{ domain_name }}.conf
+
+- name: Restart httpd to activate no-ssl site
+  service: name=httpd state=restarted
+
+- name: Create letsencrypt certificate
+  shell: letsencrypt certonly -n --webroot -w {{ webroot }} -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }}
+  args:
+    creates: /etc/letsencrypt/live/{{ domain_name }}
+
+- name: Create ssl site config
+  template:
+    src: example.com.conf
+    dest: /etc/httpd/conf.d/{{ domain_name }}.conf
+
+- name: Restart httpd to activate ssl site
+  service: name=httpd state=restarted
+
+- name: Add letsencrypt cronjob for cert renewal
+  cron:
+    name: letsencrypt_renewal
+    special_time: weekly
+    job: letsencrypt --renew certonly -n --webroot -w {{ webroot }} -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }} && service nginx reload
