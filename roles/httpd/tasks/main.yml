@@ -52,6 +52,6 @@
 
 - name: Add letsencrypt cronjob for cert renewal
   cron:
-    name: letsencrypt_renewal
+    name: letsencrypt_renewal - {{ domain_name }}
     special_time: weekly
     job: letsencrypt --renew certonly -n --webroot -w {{ webroot }} -m {{ letsencrypt_email }} --agree-tos -d {{ domain_name }} && service nginx reload
